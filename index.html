@@ -5,12 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quiz Sharing</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
+        body { font-family: Arial, sans-serif; margin: 20px; position: relative; }
         .question { margin-bottom: 20px; }
-        textarea { width: 100%; height: 80px; margin-bottom: 10px; }
-        input[type="text"] { width: calc(100% - 20px); margin-bottom: 10px; padding: 5px; }
-        button { padding: 10px 20px; margin-top: 10px; }
-        .quiz-container { margin-top: 20px; }
+        .quiz-container { margin-top: 20px; display: none; }
+        #emailInput { margin-bottom: 20px; }
+        .shop-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -23,8 +27,19 @@
 
     <div id="quiz" class="quiz-container"></div>
 
+    <div id="emailForm">
+        <h2>Enter your email to save your coins:</h2>
+        <input type="email" id="emailInput" placeholder="Enter your email" required>
+        <button onclick="startQuiz()">Start Quiz</button>
+    </div>
+
+    <div class="shop-icon" onclick="openShop()">🛒 Shop</div>
+
     <script>
-        // Function to generate a quiz link
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let questions = [];
+
         function generateLink() {
             const questionsInput = document.getElementById('questionsInput').value;
             const encodedQuestions = encodeURIComponent(questionsInput);
@@ -34,60 +49,78 @@
             linkElement.innerHTML = `<a href="${quizLink}" target="_blank">Share this Quiz Link</a>`;
         }
 
-        // Function to display the quiz from the query string
         function loadQuiz() {
             const urlParams = new URLSearchParams(window.location.search);
             const quizData = urlParams.get('quiz');
 
             if (quizData) {
-                const decodedQuestions = decodeURIComponent(quizData);
-                const questions = decodedQuestions.split('\n').filter(Boolean);
-
-                const quizContainer = document.getElementById('quiz');
-                quizContainer.innerHTML = '';
-
-                questions.forEach((q, index) => {
-                    const [questionPart, optionsPart] = q.split('?');
-                    const [correctOption, ...options] = optionsPart.split('|').join(',').split(',').map(o => o.trim());
-
-                    const questionDiv = document.createElement('div');
-                    questionDiv.className = 'question';
-                    questionDiv.innerHTML = `<p><strong>Q${index + 1}: ${questionPart.trim()}?</strong></p>`;
-
-                    [correctOption, ...options].forEach(option => {
-                        const optionElement = document.createElement('div');
-                        optionElement.innerHTML = `<label><input type="radio" name="q${index}" value="${option}" data-correct="${option === correctOption}"> ${option}</label>`;
-                        questionDiv.appendChild(optionElement);
+                document.getElementById('emailForm').style.display = 'block';
+                questions = decodeURIComponent(quizData)
+                    .split('\n')
+                    .filter(Boolean)
+                    .map(q => {
+                        const [questionPart, optionsPart] = q.split('?');
+                        const [correctOption, ...options] = optionsPart.split('|').join(',').split(',').map(o => o.trim());
+                        return { question: questionPart.trim(), options: [correctOption, ...options], correct: correctOption };
                     });
-
-                    quizContainer.appendChild(questionDiv);
-                });
-
-                const submitButton = document.createElement('button');
-                submitButton.textContent = 'Submit Quiz';
-                submitButton.onclick = evaluateQuiz;
-                quizContainer.appendChild(submitButton);
             } else {
                 document.getElementById('creator').style.display = 'block';
             }
         }
 
-        // Function to evaluate the quiz
-        function evaluateQuiz() {
-            const questions = document.querySelectorAll('.question');
-            let score = 0;
+        function startQuiz() {
+            const emailInput = document.getElementById('emailInput');
+            if (!emailInput.value) {
+                alert('Please enter your email to proceed.');
+                return;
+            }
 
-            questions.forEach(question => {
-                const selectedOption = question.querySelector('input[type="radio"]:checked');
-                if (selectedOption && selectedOption.dataset.correct === 'true') {
-                    score++;
-                }
-            });
-
-            alert(`You scored ${score}/${questions.length}!`);
+            document.getElementById('emailForm').style.display = 'none';
+            document.getElementById('quiz').style.display = 'block';
+            showQuestion();
         }
 
-        // Load the quiz on page load
+        function showQuestion() {
+            const quizContainer = document.getElementById('quiz');
+            quizContainer.innerHTML = '';
+
+            if (currentQuestionIndex < questions.length) {
+                const questionData = questions[currentQuestionIndex];
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'question';
+                questionDiv.innerHTML = `<p><strong>${questionData.question}</strong></p>`;
+
+                questionData.options.forEach(option => {
+                    const optionElement = document.createElement('div');
+                    optionElement.innerHTML = `<label><input type="radio" name="q" value="${option}" data-correct="${option === questionData.correct}"> ${option}</label>`;
+                    questionDiv.appendChild(optionElement);
+                });
+
+                const nextButton = document.createElement('button');
+                nextButton.textContent = 'Next';
+                nextButton.onclick = evaluateAnswer;
+                questionDiv.appendChild(nextButton);
+
+                quizContainer.appendChild(questionDiv);
+            } else {
+                quizContainer.innerHTML = `<h2>You completed the quiz! You earned ${score} coins!</h2>`;
+            }
+        }
+
+        function evaluateAnswer() {
+            const selectedOption = document.querySelector('input[type="radio"]:checked');
+            if (selectedOption && selectedOption.dataset.correct === 'true') {
+                score++;
+            }
+
+            currentQuestionIndex++;
+            showQuestion();
+        }
+
+        function openShop() {
+            window.location.href = '/shop.html';
+        }
+
         window.onload = loadQuiz;
     </script>
 </body>
