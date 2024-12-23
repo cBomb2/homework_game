@@ -14,14 +14,13 @@
     </style>
 </head>
 <body>
-    <h1>Quiz Creator</h1>
-    <div id="creator">
-        <textarea id="questionsInput" placeholder="Enter questions in the format: Question? Option1, Option2, Option3..."></textarea>
+    <div id="creator" style="display: none;">
+        <h1>Quiz Creator</h1>
+        <textarea id="questionsInput" placeholder="Enter questions in the format: Question? CorrectOption | Option2, Option3..."></textarea>
         <button onclick="generateLink()">Generate Quiz Link</button>
         <p id="quizLink"></p>
     </div>
 
-    <h1>Quiz</h1>
     <div id="quiz" class="quiz-container"></div>
 
     <script>
@@ -48,22 +47,44 @@
                 quizContainer.innerHTML = '';
 
                 questions.forEach((q, index) => {
-                    const [question, ...options] = q.split('?');
-                    const optionsArray = options.join('?').split(',').map(o => o.trim());
+                    const [questionPart, optionsPart] = q.split('?');
+                    const [correctOption, ...options] = optionsPart.split('|').join(',').split(',').map(o => o.trim());
 
                     const questionDiv = document.createElement('div');
                     questionDiv.className = 'question';
-                    questionDiv.innerHTML = `<p><strong>Q${index + 1}: ${question.trim()}?</strong></p>`;
+                    questionDiv.innerHTML = `<p><strong>Q${index + 1}: ${questionPart.trim()}?</strong></p>`;
 
-                    optionsArray.forEach(option => {
+                    [correctOption, ...options].forEach(option => {
                         const optionElement = document.createElement('div');
-                        optionElement.innerHTML = `<label><input type="radio" name="q${index}" value="${option}"> ${option}</label>`;
+                        optionElement.innerHTML = `<label><input type="radio" name="q${index}" value="${option}" data-correct="${option === correctOption}"> ${option}</label>`;
                         questionDiv.appendChild(optionElement);
                     });
 
                     quizContainer.appendChild(questionDiv);
                 });
+
+                const submitButton = document.createElement('button');
+                submitButton.textContent = 'Submit Quiz';
+                submitButton.onclick = evaluateQuiz;
+                quizContainer.appendChild(submitButton);
+            } else {
+                document.getElementById('creator').style.display = 'block';
             }
+        }
+
+        // Function to evaluate the quiz
+        function evaluateQuiz() {
+            const questions = document.querySelectorAll('.question');
+            let score = 0;
+
+            questions.forEach(question => {
+                const selectedOption = question.querySelector('input[type="radio"]:checked');
+                if (selectedOption && selectedOption.dataset.correct === 'true') {
+                    score++;
+                }
+            });
+
+            alert(`You scored ${score}/${questions.length}!`);
         }
 
         // Load the quiz on page load
