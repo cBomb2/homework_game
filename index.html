@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Sharing</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .question { margin-bottom: 20px; }
+        textarea { width: 100%; height: 80px; margin-bottom: 10px; }
+        input[type="text"] { width: calc(100% - 20px); margin-bottom: 10px; padding: 5px; }
+        button { padding: 10px 20px; margin-top: 10px; }
+        .quiz-container { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Quiz Creator</h1>
+    <div id="creator">
+        <textarea id="questionsInput" placeholder="Enter questions in the format: Question? Option1, Option2, Option3..."></textarea>
+        <button onclick="generateLink()">Generate Quiz Link</button>
+        <p id="quizLink"></p>
+    </div>
+
+    <h1>Quiz</h1>
+    <div id="quiz" class="quiz-container"></div>
+
+    <script>
+        // Function to generate a quiz link
+        function generateLink() {
+            const questionsInput = document.getElementById('questionsInput').value;
+            const encodedQuestions = encodeURIComponent(questionsInput);
+            const quizLink = `${window.location.origin}${window.location.pathname}?quiz=${encodedQuestions}`;
+
+            const linkElement = document.getElementById('quizLink');
+            linkElement.innerHTML = `<a href="${quizLink}" target="_blank">Share this Quiz Link</a>`;
+        }
+
+        // Function to display the quiz from the query string
+        function loadQuiz() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const quizData = urlParams.get('quiz');
+
+            if (quizData) {
+                const decodedQuestions = decodeURIComponent(quizData);
+                const questions = decodedQuestions.split('\n').filter(Boolean);
+
+                const quizContainer = document.getElementById('quiz');
+                quizContainer.innerHTML = '';
+
+                questions.forEach((q, index) => {
+                    const [question, ...options] = q.split('?');
+                    const optionsArray = options.join('?').split(',').map(o => o.trim());
+
+                    const questionDiv = document.createElement('div');
+                    questionDiv.className = 'question';
+                    questionDiv.innerHTML = `<p><strong>Q${index + 1}: ${question.trim()}?</strong></p>`;
+
+                    optionsArray.forEach(option => {
+                        const optionElement = document.createElement('div');
+                        optionElement.innerHTML = `<label><input type="radio" name="q${index}" value="${option}"> ${option}</label>`;
+                        questionDiv.appendChild(optionElement);
+                    });
+
+                    quizContainer.appendChild(questionDiv);
+                });
+            }
+        }
+
+        // Load the quiz on page load
+        window.onload = loadQuiz;
+    </script>
+</body>
+</html>
